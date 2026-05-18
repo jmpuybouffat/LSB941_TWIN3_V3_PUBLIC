@@ -8,7 +8,7 @@ import streamlit as st
 import pandas as pd
 
 
-BASE_DIR = Path(r"D:\PROJET_BYTENDT_AI\01_SCRIPTS\09_RESULTS_REPORTS\LSB941_TWIN_V1")
+BASE_DIR = Path(__file__).parent
 
 IMG_DIR = BASE_DIR / "06_IMAGES"
 REPORT_DIR = BASE_DIR / "07_REPORTS"

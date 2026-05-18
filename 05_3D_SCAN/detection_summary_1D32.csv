@@ -1,0 +1,3 @@
+config,condition,max_scan_id,max_edm_vs_geometry_dB,max_x,max_y,max_z,coverage_above_minus6_percent,status
+1D32,A_PA1_to_C1,198,8.774847468174688,121.26,123.25,-51.8,100.0,ACCEPTABLE
+1D32,B_PA2_to_C2,198,6.765469424151683,124.88,160.42,-51.8,100.0,ACCEPTABLE

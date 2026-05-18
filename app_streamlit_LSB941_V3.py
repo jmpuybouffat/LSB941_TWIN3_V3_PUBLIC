@@ -311,12 +311,40 @@ Ces couches ne sont pas encore complètement implémentées comme solveur indust
 
 st.divider()
 
-st.header("7. Message for Shaun / Message pour Shaun")
+st.header("7. General communication / Communication générale")
 
 st.info(
     """
-The LSB941 Byte NDT Twin V3 demonstrator is now structured with restored PA trajectories, dynamic focal laws, calibrated beam fields, EDM response, 3D groove scans, operator reports and hardware-oriented delay exports for three PA configurations: 1D16, 1D32 and 2D8x8.
+BYTE NDT Twin V3 demonstrates a complete NDE 4.0 methodology for ultrasonic examination development.
 
-This version is ready for review as a GitHub/Streamlit demonstrator.
+The objective is to build and validate the inspection procedure digitally before physical testing:
+
+- import or reconstruct the component geometry,
+- define EDM / defect reference data,
+- position PA trajectories,
+- generate dynamic focal laws,
+- simulate calibrated beam fields,
+- compute EDM / geometry response,
+- generate 3D groove scans,
+- produce operator reports,
+- prepare hardware-oriented delay exports,
+- support future machine learning datasets.
+
+FR :
+
+BYTE NDT Twin V3 démontre une méthodologie complète NDE 4.0 pour le développement d'examens ultrasonores.
+
+L'objectif est de construire et valider numériquement la procédure avant les essais physiques :
+
+- importer ou reconstruire la géométrie de la pièce,
+- définir les données de référence EDM / défauts,
+- positionner les trajectoires PA,
+- générer les lois focales dynamiques,
+- simuler les champs faisceaux calibrés,
+- calculer la réponse EDM / géométrie,
+- générer les scans 3D de gorge,
+- produire les rapports opérateur,
+- préparer les exports de délais orientés hardware,
+- alimenter les futures bases machine learning.
 """
 )

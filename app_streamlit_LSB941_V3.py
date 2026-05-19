@@ -414,3 +414,50 @@ L'objectif est de construire et valider numériquement la procédure avant les e
 - alimenter les futures bases machine learning.
 """
 )
+st.divider()
+
+st.header("V4.2 Final Twin Scan / Scan final du jumeau numérique")
+
+st.markdown("""
+This V4.2 layer presents the final Twin scan image for communication.
+
+It combines:
+
+- reference EDM responses,
+- Green + Gaussian response modelling,
+- clean geometry echo from the groove boundaries,
+- a first edge-diffraction proxy.
+
+This image demonstrates the Byte NDT principle: preparing and visualizing the ultrasonic inspection before hardware deployment.
+
+FR : Cette couche V4.2 présente l'image finale du jumeau numérique pour communication.
+
+Elle combine :
+
+- les réponses EDM de référence,
+- la modélisation Green + Gauss,
+- l'écho de géométrie des limites de gorge,
+- un premier proxy de diffraction de bord.
+
+Cette image démontre le principe Byte NDT : préparer et visualiser l'examen ultrasonore avant le déploiement matériel.
+""")
+
+v42_img = EXPORT_DIR / "BYTE_NDT_V42_clean_final_twin_scan.png"
+
+if v42_img.exists():
+    st.image(str(v42_img), caption="BYTE NDT V4.2 - Final Twin Scan", use_container_width=True)
+else:
+    st.warning(f"Missing file: {v42_img.name}")
+
+v42_report = EXPORT_DIR / "BYTE_NDT_V42_clean_summary.csv"
+
+if v42_report.exists():
+    with open(v42_report, "rb") as f:
+        st.download_button(
+            label="Download V4.2 summary report",
+            data=f,
+            file_name="BYTE_NDT_V42_clean_summary.csv",
+            mime="text/csv",
+        )
+else:
+    st.warning(f"Missing file: {v42_report.name}")

@@ -1,6 +1,6 @@
 # ============================================================
 # BYTE NDT - LSB941 TWIN V3 STREAMLIT APP
-# Operator view + reports + hardware exports + Tumelo V3.1
+# Operator view + reports + hardware exports + Reference V3.1
 # ============================================================
 
 from pathlib import Path
@@ -217,21 +217,21 @@ st.divider()
 
 
 # ============================================================
-# 5. TUMELO MULTI-EDM V3.1
+# 5. Reference MULTI-EDM V3.1
 # ============================================================
 
-st.header("5. Tumelo multi-EDM V3.1 / Détection multi-EDM Tumelo V3.1")
+st.header("5. Reference multi-EDM V3.1 / Détection multi-EDM Reference V3.1")
 
 st.markdown(
     """
-This section presents the V3.1 validation using the Tumelo EDM reference list.
+This section presents the V3.1 validation using the Reference EDM reference list.
 
 The current validated distribution is:
 
 - **SIDE_A: 8 EDM**
 - **SIDE_B: 3 EDM**
 
-FR : Cette section présente la validation V3.1 basée sur la liste EDM de référence Tumelo.
+FR : Cette section présente la validation V3.1 basée sur la liste EDM de référence Reference.
 
 La répartition validée est :
 
@@ -246,19 +246,19 @@ tumelo_report = EXPORT_DIR / "BYTE_NDT_Tumelo_EDM_detection_report_ALL.csv"
 col_t1, col_t2 = st.columns([2, 1])
 
 with col_t1:
-    st.subheader("Tumelo EDM detection map")
+    st.subheader("Reference EDM detection map")
     if tumelo_map.exists():
         st.image(str(tumelo_map), use_container_width=True)
-        file_download_button(tumelo_map, "Download Tumelo EDM detection map")
+        file_download_button(tumelo_map, "Download Reference EDM detection map")
     else:
         st.warning(f"Missing file: {tumelo_map.name}")
 
 with col_t2:
-    st.subheader("Tumelo EDM detection report")
+    st.subheader("Reference EDM detection report")
     df_tumelo = read_csv_safe(tumelo_report)
     if df_tumelo is not None:
         st.dataframe(df_tumelo, use_container_width=True)
-        file_download_button(tumelo_report, "Download Tumelo EDM detection report")
+        file_download_button(tumelo_report, "Download Reference EDM detection report")
     else:
         st.warning(f"Missing file: {tumelo_report.name}")
 
@@ -325,7 +325,7 @@ The current demonstrator generates:
 - operator-view images,
 - automatic bilingual reports,
 - hardware-oriented delay tables,
-- Tumelo multi-EDM V3.1 detection report.
+- Reference multi-EDM V3.1 detection report.
 
 ### Important note
 
@@ -353,7 +353,7 @@ Le démonstrateur génère :
 - les images opérateur,
 - les rapports automatiques bilingues,
 - les tables de délais orientées hardware,
-- le rapport multi-EDM Tumelo V3.1.
+- le rapport multi-EDM Reference V3.1.
 
 ### Note importante
 

@@ -1,0 +1,12 @@
+edm_id,side,edm_x,edm_y,edm_z,green_gauss_response_percent,green_gauss_response_db,spot_sigma_mm,status,physics_level
+EDM_01,SIDE_A,145.1,96.1,-51.8,0.34025684270391315,-49.36386264395213,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot
+EDM_02,SIDE_A,176.9,94.0,-51.8,0.006365024012824386,-83.92399907157352,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot
+EDM_03,SIDE_A,160.4,67.8,-51.8,0.0004336725304346307,-107.25676171881778,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot
+EDM_04,SIDE_A,191.7,61.4,-51.8,3.0064546831245564e-07,-170.43890675948467,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot
+EDM_05,SIDE_A,199.8,24.5,-51.8,6.631002409746493e-13,-220.0,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot
+EDM_06,SIDE_A,174.1,0.0,-51.8,1.0787097723671061e-14,-220.0,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot
+EDM_07,SIDE_A,199.0,-33.2,-51.8,4.098141367721367e-24,-220.0,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot
+EDM_08,SIDE_A,160.8,-66.6,-51.8,3.6950038148139626e-30,-220.0,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot
+EDM_09,SIDE_B,174.7,-99.9,-51.8,1.3106355009970612e-40,-220.0,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot
+EDM_10,SIDE_B,160.5,-121.5,-51.8,8.497141698487279e-47,-220.0,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot
+EDM_11,SIDE_B,118.6,-188.0,-51.8,1.1976013774360778e-72,-220.0,5.0,NOT_DETECTED,V4.1 Green+Gauss sampled scan with localized EDM spot

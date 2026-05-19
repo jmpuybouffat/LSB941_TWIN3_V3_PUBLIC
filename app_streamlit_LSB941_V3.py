@@ -240,7 +240,7 @@ La répartition validée est :
 """
 )
 
-tumelo_map = EXPORT_DIR / "BYTE_NDT_Tumelo_EDM_detection_map.png"
+tumelo_map = EXPORT_DIR / "PUBLIC_REFERENCE_EDM_MAP_HIDDEN.png"
 tumelo_report = EXPORT_DIR / "BYTE_NDT_Tumelo_EDM_detection_report_ALL.csv"
 
 col_t1, col_t2 = st.columns([2, 1])

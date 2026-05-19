@@ -2,13 +2,14 @@
 # BYTE NDT - LSB941 TWIN V3.1
 # Tumelo multi-EDM detection report + detection map
 #
-# Input:
-#   01_INPUTS_VALIDATED_GEOMETRY/EDM_Tumelo_transformed.csv
-#   05_3D_SCAN/scan3D_groove_total_1D16.csv
-#   05_3D_SCAN/scan3D_groove_total_1D32.csv
-#   05_3D_SCAN/scan3D_groove_total_2D8x8.csv
+# Reference:
+#   EDM_Tumelo_transformed.csv
 #
-# Output:
+# Validated EDM distribution:
+#   8 EDM on SIDE_A
+#   3 EDM on SIDE_B
+#
+# Outputs:
 #   07_REPORTS/BYTE_NDT_Tumelo_EDM_detection_report_ALL.csv
 #   06_IMAGES/BYTE_NDT_Tumelo_EDM_detection_map.png
 #   08_EXPORT_FOR_STREAMLIT/...
@@ -41,27 +42,34 @@ CONFIGS = ["1D16", "1D32", "2D8x8"]
 def read_edm_tumelo(path: Path) -> pd.DataFrame:
     """
     Reads Tumelo EDM list.
-    Expected format: X;Y;Z with decimal comma or decimal point.
+
+    Expected format:
+        X;Y;Z
+
+    Decimal comma or decimal point accepted.
     No header assumed.
     """
     if not path.exists():
         raise FileNotFoundError(f"Missing EDM Tumelo file: {path}")
 
     rows = []
+
     with open(path, "r", encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
+
             if not line:
                 continue
 
-            # allow ; , whitespace, decimal comma
             parts = line.replace(",", ".").replace(";", " ").split()
 
             if len(parts) < 3:
                 continue
 
             try:
-                x, y, z = float(parts[0]), float(parts[1]), float(parts[2])
+                x = float(parts[0])
+                y = float(parts[1])
+                z = float(parts[2])
                 rows.append((x, y, z))
             except ValueError:
                 continue
@@ -70,17 +78,26 @@ def read_edm_tumelo(path: Path) -> pd.DataFrame:
         raise ValueError(f"No valid EDM XYZ points found in {path}")
 
     df = pd.DataFrame(rows, columns=["edm_x", "edm_y", "edm_z"])
-    df.insert(0, "edm_id", [f"EDM_{i+1:02d}" for i in range(len(df))])
+    df.insert(0, "edm_id", [f"EDM_{i + 1:02d}" for i in range(len(df))])
 
-    # Temporary side attribution:
-    # positive/negative Y split. This can be refined after groove validation.
-    y_mid = df["edm_y"].median()
-    df["side"] = np.where(df["edm_y"] >= y_mid, "SIDE_A", "SIDE_B")
+    if len(df) != 11:
+        print(f"WARNING: expected 11 EDM, found {len(df)}")
+
+    # Tumelo validated side attribution:
+    # 8 EDM on first groove/side, 3 EDM on second groove/side.
+    if len(df) == 11:
+        df["side"] = ["SIDE_A"] * 8 + ["SIDE_B"] * 3
+    else:
+        # Fallback if another list is used
+        df["side"] = "SIDE_UNKNOWN"
 
     return df
 
 
 def read_csv_robust(path: Path) -> pd.DataFrame:
+    """
+    Reads CSV with comma, semicolon or whitespace separator.
+    """
     if not path.exists():
         raise FileNotFoundError(f"Missing scan file: {path}")
 
@@ -96,14 +113,22 @@ def read_csv_robust(path: Path) -> pd.DataFrame:
 
 
 def find_col(df: pd.DataFrame, candidates: list[str]) -> str | None:
+    """
+    Finds first matching column from candidate names.
+    """
     lower = {str(c).lower(): c for c in df.columns}
+
     for name in candidates:
         if name.lower() in lower:
             return lower[name.lower()]
+
     return None
 
 
 def load_scan(config: str) -> pd.DataFrame:
+    """
+    Loads V3 scan for one PA configuration.
+    """
     path = SCAN_DIR / f"scan3D_groove_total_{config}.csv"
     df = read_csv_robust(path)
 
@@ -121,6 +146,7 @@ def load_scan(config: str) -> pd.DataFrame:
 
     for standard, candidates in required_candidates.items():
         col = find_col(df, candidates)
+
         if col is not None:
             out[standard] = df[col]
         else:
@@ -133,38 +159,55 @@ def load_scan(config: str) -> pd.DataFrame:
 
     out["config"] = config
 
-    # Numeric conversion
-    for c in ["scan_position_mm", "amplitude_percent", "amplitude_db", "focus_x", "focus_y", "focus_z"]:
-        out[c] = pd.to_numeric(out[c], errors="coerce")
+    for col in [
+        "scan_position_mm",
+        "amplitude_percent",
+        "amplitude_db",
+        "focus_x",
+        "focus_y",
+        "focus_z",
+    ]:
+        out[col] = pd.to_numeric(out[col], errors="coerce")
 
     out = out.dropna(subset=["amplitude_percent"])
+
+    if len(out) == 0:
+        raise ValueError(f"No valid amplitude data found in scan file: {path}")
+
     return out
 
 
-def compute_detection_for_edm(edm_row: pd.Series, scan_df: pd.DataFrame, config: str) -> dict:
+def compute_detection_for_edm(
+    edm_row: pd.Series,
+    scan_df: pd.DataFrame,
+    config: str,
+) -> dict:
     """
-    Associates each EDM with nearest focal/scan response.
+    Associates one EDM with the best scan response.
 
-    Current V3.1 logic:
-    - spatial distance to focus_x/focus_y/focus_z when available
-    - if scan coordinates are incomplete, uses strongest local response
-    - reports amplitude and -6 dB equivalent width
+    V3.1 logic:
+    - use distance from EDM to focal point when focus coordinates exist,
+    - combine proximity and amplitude,
+    - compute local -6 dB length.
     """
+    edm_xyz = np.array(
+        [edm_row["edm_x"], edm_row["edm_y"], edm_row["edm_z"]],
+        dtype=float,
+    )
 
-    edm_xyz = np.array([edm_row["edm_x"], edm_row["edm_y"], edm_row["edm_z"]], dtype=float)
+    focus_ok = scan_df[["focus_x", "focus_y", "focus_z"]].notna().all(axis=1)
 
-    focus_cols_ok = scan_df[["focus_x", "focus_y", "focus_z"]].notna().all(axis=1)
-
-    if focus_cols_ok.any():
-        sub = scan_df.loc[focus_cols_ok].copy()
+    if focus_ok.any():
+        sub = scan_df.loc[focus_ok].copy()
         focus_xyz = sub[["focus_x", "focus_y", "focus_z"]].to_numpy(dtype=float)
+
         dist = np.linalg.norm(focus_xyz - edm_xyz[None, :], axis=1)
 
-        # Combine distance and amplitude: nearest strong response
         amp = sub["amplitude_percent"].to_numpy(dtype=float)
         amp_norm = amp / max(np.nanmax(amp), 1e-12)
 
         score = amp_norm / (1.0 + dist / 10.0)
+
         best_local_idx = int(np.nanargmax(score))
         best = sub.iloc[best_local_idx]
         best_distance = float(dist[best_local_idx])
@@ -178,7 +221,6 @@ def compute_detection_for_edm(edm_row: pd.Series, scan_df: pd.DataFrame, config:
     scan_pos = float(best["scan_position_mm"]) if np.isfinite(best["scan_position_mm"]) else np.nan
     condition = str(best["condition"])
 
-    # -6 dB width based on global scan response near strongest response
     amp_all = scan_df["amplitude_percent"].to_numpy(dtype=float)
     scan_all = scan_df["scan_position_mm"].to_numpy(dtype=float)
 
@@ -225,6 +267,9 @@ def compute_detection_for_edm(edm_row: pd.Series, scan_df: pd.DataFrame, config:
 
 
 def build_multi_edm_report(edm_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Builds the full multi-EDM report for all PA configurations.
+    """
     all_rows = []
 
     for config in CONFIGS:
@@ -237,9 +282,9 @@ def build_multi_edm_report(edm_df: pd.DataFrame) -> pd.DataFrame:
 
     report = pd.DataFrame(all_rows)
 
-    # Best config per EDM
     report["rank_amp"] = report.groupby("edm_id")["max_amplitude_percent"].rank(
-        method="first", ascending=False
+        method="first",
+        ascending=False,
     )
 
     report["best_config_for_edm"] = np.where(report["rank_amp"] == 1, "YES", "NO")
@@ -249,18 +294,27 @@ def build_multi_edm_report(edm_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_multi_edm_map(edm_df: pd.DataFrame, report: pd.DataFrame) -> Path:
+    """
+    Generates multi-EDM detection map.
+    """
     out_img = IMG_DIR / "BYTE_NDT_Tumelo_EDM_detection_map.png"
 
     best = report[report["best_config_for_edm"] == "YES"].copy()
 
     fig = plt.figure(figsize=(16, 10))
-    fig.suptitle("BYTE NDT - LSB941 V3.1 Tumelo Multi-EDM Detection Map", fontsize=16, fontweight="bold")
+    fig.suptitle(
+        "BYTE NDT - LSB941 V3.1 Tumelo Multi-EDM Detection Map",
+        fontsize=16,
+        fontweight="bold",
+    )
 
     ax1 = fig.add_subplot(2, 2, 1)
-    for side, g in edm_df.groupby("side"):
-        ax1.scatter(g["edm_x"], g["edm_y"], label=side, s=80)
-        for _, r in g.iterrows():
-            ax1.text(r["edm_x"], r["edm_y"], r["edm_id"], fontsize=8)
+
+    for side, group in edm_df.groupby("side"):
+        ax1.scatter(group["edm_x"], group["edm_y"], label=side, s=80)
+
+        for _, row in group.iterrows():
+            ax1.text(row["edm_x"], row["edm_y"], row["edm_id"], fontsize=8)
 
     ax1.set_title("Tumelo EDM positions / Positions EDM Tumelo")
     ax1.set_xlabel("X (mm)")
@@ -276,18 +330,25 @@ def plot_multi_edm_map(edm_df: pd.DataFrame, report: pd.DataFrame) -> Path:
     ax2.grid(True, axis="y")
 
     ax3 = fig.add_subplot(2, 2, 3)
+
     colors = []
-    for s in best["status"]:
-        if s == "DETECTED":
+    for status in best["status"]:
+        if status == "DETECTED":
             colors.append("green")
-        elif s == "TO_BE_CONFIRMED":
+        elif status == "TO_BE_CONFIRMED":
             colors.append("orange")
         else:
             colors.append("red")
 
     ax3.scatter(best["edm_x"], best["edm_y"], c=colors, s=120)
-    for _, r in best.iterrows():
-        ax3.text(r["edm_x"], r["edm_y"], f"{r['edm_id']}\n{r['config']}", fontsize=8)
+
+    for _, row in best.iterrows():
+        ax3.text(
+            row["edm_x"],
+            row["edm_y"],
+            f"{row['edm_id']}\n{row['config']}",
+            fontsize=8,
+        )
 
     ax3.set_title("Best PA configuration per EDM")
     ax3.set_xlabel("X (mm)")
@@ -296,14 +357,20 @@ def plot_multi_edm_map(edm_df: pd.DataFrame, report: pd.DataFrame) -> Path:
 
     ax4 = fig.add_subplot(2, 2, 4)
     ax4.axis("off")
+
     n_edm = edm_df["edm_id"].nunique()
-    n_detected = (best["status"] == "DETECTED").sum()
-    n_confirm = (best["status"] == "TO_BE_CONFIRMED").sum()
-    n_not = (best["status"] == "NOT_DETECTED").sum()
+    n_side_a = int((edm_df["side"] == "SIDE_A").sum())
+    n_side_b = int((edm_df["side"] == "SIDE_B").sum())
+
+    n_detected = int((best["status"] == "DETECTED").sum())
+    n_confirm = int((best["status"] == "TO_BE_CONFIRMED").sum())
+    n_not = int((best["status"] == "NOT_DETECTED").sum())
 
     text = (
         "V3.1 MULTI-EDM REPORT / RAPPORT MULTI-EDM V3.1\n\n"
         f"Tumelo EDM count / Nombre EDM Tumelo: {n_edm}\n"
+        f"SIDE_A: {n_side_a} EDM\n"
+        f"SIDE_B: {n_side_b} EDM\n\n"
         f"Detected / Détectées: {n_detected}\n"
         f"To be confirmed / À confirmer: {n_confirm}\n"
         f"Not detected / Non détectées: {n_not}\n\n"
@@ -318,6 +385,7 @@ def plot_multi_edm_map(edm_df: pd.DataFrame, report: pd.DataFrame) -> Path:
         "The map associates each Tumelo EDM with the best response\n"
         "from the V3.1 3D groove scans."
     )
+
     ax4.text(0.02, 0.98, text, va="top", fontsize=11)
 
     plt.tight_layout(rect=[0, 0, 1, 0.94])
@@ -330,10 +398,10 @@ def plot_multi_edm_map(edm_df: pd.DataFrame, report: pd.DataFrame) -> Path:
     return out_img
 
 
-def main():
+def main() -> None:
     print("BYTE NDT - V3.1 Tumelo Multi-EDM Detection")
-
     print(f"Reading EDM file: {EDM_FILE}")
+
     edm_df = read_edm_tumelo(EDM_FILE)
 
     print(f"Tumelo EDM count: {len(edm_df)}")

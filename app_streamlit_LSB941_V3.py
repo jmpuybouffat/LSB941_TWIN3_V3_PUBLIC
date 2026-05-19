@@ -1,6 +1,6 @@
 # ============================================================
 # BYTE NDT - LSB941 TWIN V3 STREAMLIT APP
-# Operator view + reports + hardware exports
+# Operator view + reports + hardware exports + Tumelo V3.1
 # ============================================================
 
 from pathlib import Path
@@ -56,6 +56,10 @@ def read_csv_safe(path: Path):
     return None
 
 
+# ============================================================
+# HEADER
+# ============================================================
+
 st.title("BYTE NDT - LSB941 Twin V3")
 st.subheader("Digital Twin demonstrator for blade root ultrasonic inspection")
 
@@ -73,8 +77,9 @@ FR : Ce démonstrateur relie la chaîne complète d'examen :
 
 st.divider()
 
+
 # ============================================================
-# GLOBAL STATUS
+# 1. GLOBAL STATUS
 # ============================================================
 
 st.header("1. Global V3 status / État global V3")
@@ -91,8 +96,9 @@ else:
 
 st.divider()
 
+
 # ============================================================
-# OPERATOR VIEWS
+# 2. OPERATOR VIEWS
 # ============================================================
 
 st.header("2. Operator views / Vues opérateur")
@@ -114,7 +120,7 @@ with col1:
         st.image(str(image_path), use_container_width=True)
         file_download_button(image_path, f"Download operator image {selected_config}")
     else:
-        st.error(f"Missing image: {image_path}")
+        st.error(f"Missing image: {image_path.name}")
 
 with col2:
     st.subheader("Automatic report")
@@ -127,8 +133,9 @@ with col2:
 
 st.divider()
 
+
 # ============================================================
-# FOCAL LAWS
+# 3. DYNAMIC FOCAL LAWS
 # ============================================================
 
 st.header("3. Dynamic focal laws / Lois focales dynamiques")
@@ -156,8 +163,9 @@ for f in focal_files:
 
 st.divider()
 
+
 # ============================================================
-# HARDWARE EXPORT
+# 4. HARDWARE EXPORT
 # ============================================================
 
 st.header("4. Hardware-oriented export / Export orienté carte PA")
@@ -207,11 +215,61 @@ for f in hardware_files:
 
 st.divider()
 
+
 # ============================================================
-# BEAM / EDM / SCAN DATA
+# 5. TUMELO MULTI-EDM V3.1
 # ============================================================
 
-st.header("5. Beam field, EDM response and 3D scan data")
+st.header("5. Tumelo multi-EDM V3.1 / Détection multi-EDM Tumelo V3.1")
+
+st.markdown(
+    """
+This section presents the V3.1 validation using the Tumelo EDM reference list.
+
+The current validated distribution is:
+
+- **SIDE_A: 8 EDM**
+- **SIDE_B: 3 EDM**
+
+FR : Cette section présente la validation V3.1 basée sur la liste EDM de référence Tumelo.
+
+La répartition validée est :
+
+- **SIDE_A : 8 EDM**
+- **SIDE_B : 3 EDM**
+"""
+)
+
+tumelo_map = EXPORT_DIR / "BYTE_NDT_Tumelo_EDM_detection_map.png"
+tumelo_report = EXPORT_DIR / "BYTE_NDT_Tumelo_EDM_detection_report_ALL.csv"
+
+col_t1, col_t2 = st.columns([2, 1])
+
+with col_t1:
+    st.subheader("Tumelo EDM detection map")
+    if tumelo_map.exists():
+        st.image(str(tumelo_map), use_container_width=True)
+        file_download_button(tumelo_map, "Download Tumelo EDM detection map")
+    else:
+        st.warning(f"Missing file: {tumelo_map.name}")
+
+with col_t2:
+    st.subheader("Tumelo EDM detection report")
+    df_tumelo = read_csv_safe(tumelo_report)
+    if df_tumelo is not None:
+        st.dataframe(df_tumelo, use_container_width=True)
+        file_download_button(tumelo_report, "Download Tumelo EDM detection report")
+    else:
+        st.warning(f"Missing file: {tumelo_report.name}")
+
+st.divider()
+
+
+# ============================================================
+# 6. BEAM / EDM / 3D SCAN DATA
+# ============================================================
+
+st.header("6. Beam field, EDM response and 3D scan data")
 
 data_tabs = st.tabs(["Beam field", "EDM response", "3D groove scan"])
 
@@ -247,17 +305,18 @@ with data_tabs[2]:
 
 st.divider()
 
+
 # ============================================================
-# TECHNICAL EXPLANATION
+# 7. TECHNICAL EXPLANATION
 # ============================================================
 
-st.header("6. Technical explanation / Explication technique")
+st.header("7. Technical explanation / Explication technique")
 
 st.markdown(
     """
-### Current V3 implementation
+### Current V3 / V3.1 implementation
 
-The current V3 demonstrator generates:
+The current demonstrator generates:
 
 - dynamic focal laws for 1D16, 1D32 and 2D8x8 configurations,
 - calibrated Gaussian / CIVA-like beam fields,
@@ -265,7 +324,8 @@ The current V3 demonstrator generates:
 - calibrated 3D groove scan datasets,
 - operator-view images,
 - automatic bilingual reports,
-- hardware-oriented delay tables.
+- hardware-oriented delay tables,
+- Tumelo multi-EDM V3.1 detection report.
 
 ### Important note
 
@@ -282,9 +342,9 @@ These layers are not yet fully implemented as the final industrial solver, but t
 
 ---
 
-### Implémentation V3 actuelle
+### Implémentation actuelle V3 / V3.1
 
-Le démonstrateur V3 génère :
+Le démonstrateur génère :
 
 - les lois focales dynamiques pour 1D16, 1D32 et 2D8x8,
 - les champs faisceau calibrés de type gaussien / CIVA-like,
@@ -292,7 +352,8 @@ Le démonstrateur V3 génère :
 - les scans 3D calibrés de gorge,
 - les images opérateur,
 - les rapports automatiques bilingues,
-- les tables de délais orientées hardware.
+- les tables de délais orientées hardware,
+- le rapport multi-EDM Tumelo V3.1.
 
 ### Note importante
 
@@ -311,11 +372,16 @@ Ces couches ne sont pas encore complètement implémentées comme solveur indust
 
 st.divider()
 
-st.header("7. General communication / Communication générale")
+
+# ============================================================
+# 8. GENERAL COMMUNICATION
+# ============================================================
+
+st.header("8. General communication / Communication générale")
 
 st.info(
     """
-BYTE NDT Twin V3 demonstrates a complete NDE 4.0 methodology for ultrasonic examination development.
+BYTE NDT Twin V3/V3.1 demonstrates a complete NDE 4.0 methodology for ultrasonic examination development.
 
 The objective is to build and validate the inspection procedure digitally before physical testing:
 
@@ -332,7 +398,7 @@ The objective is to build and validate the inspection procedure digitally before
 
 FR :
 
-BYTE NDT Twin V3 démontre une méthodologie complète NDE 4.0 pour le développement d'examens ultrasonores.
+BYTE NDT Twin V3/V3.1 démontre une méthodologie complète NDE 4.0 pour le développement d'examens ultrasonores.
 
 L'objectif est de construire et valider numériquement la procédure avant les essais physiques :
 

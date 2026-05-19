@@ -1,0 +1,14 @@
+# Heavy local data
+03_BEAM_FIELD/*.csv
+04_EDM_RESPONSE/*spot_image*.csv
+05_3D_SCAN/green_gauss*.csv
+05_3D_SCAN/*scan_axis_corrected*.csv
+
+# Local inputs / confidential data
+01_INPUTS_VALIDATED_GEOMETRY/
+PA1_TESTS/
+*.f3d
+
+# Python/cache
+__pycache__/
+*.pyc
